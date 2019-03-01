@@ -40,7 +40,7 @@ For performing pattern matching, you should send a ``POST`` request with appropr
 This program expects a ``JSON`` object as input. This object contains one key, ``data`` which stores a list of list, containing all elements in the input Matrix row by row. See the following for sample input.
 
 ```javascript
-{ "data" : 
+{ "data" :
     [[".", ".", "."],
     [".", ".", "."],
     [".", ".", "."]]
