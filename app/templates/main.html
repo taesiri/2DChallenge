@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en" class="h-100">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
+    <meta name="generator" content="Jekyll v3.8.5">
+    <title>Pattern Matching!</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+        crossorigin="anonymous">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+    <style>
+        .bd-placeholder-img {
+            font-size: 1.125rem;
+            text-anchor: middle;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        @media (min-width: 768px) {
+            .bd-placeholder-img-lg {
+                font-size: 3.5rem;
+            }
+        }
+        .container {
+            width: auto;
+            max-width: 680px;
+            padding: 0 15px;
+        }
+        .footer {
+            background-color: #f5f5f5;
+        }
+    </style>
+    <!-- Custom styles for this template -->
+</head>
+
+<body class="d-flex flex-column h-100">
+    <!-- Begin page content -->
+    <main role="main" class="flex-shrink-0">
+        <div class="container">
+            <h2>2D Pattern Matching Demo!</h2>
+            <hr>
+            <!-- <h1><a id="2D_Pattern_Matching_0"></a>2D Pattern Matching</h1> -->
+            <p>Create a program that stores a set of 2D patterns, which can be matched against a 2D matrix of variable size. A match is found only if the input matrix contains exactly one pattern where both values and positions are equal. The program should take an input matrix as predicate and return the name of first matched pattern. <a href="https://gist.github.com/pomle/10d7d54fb00d50fe4a329e9a2bd49c90">Full problem statement</a>.</p>
+            <h3><a id="About_the_Problem_4"></a>About the Problem</h3>
+            <p>When I first saw this problem, I thought it is asking for a general 2D pattern matching with <code>'.'</code> char as a wildcard that can match anything. As I was familiar with Signal Processing, I knew that performing a <code>Cross Correlation</code> with the pattern as <code>Mask</code> on the input matrix followed by a linear scan to find special values in the output will instantly solve the problem. The only preprocessing that this algorithm need is to swap each character in the matrix with a numerical value corresponding to that character (One simply can use a Hash function). From the performance point of view, both <code>Convolution</code> and <code>Cross Correlation</code> operators might seem bad, but these operators are very well known and almost all implementations of these functions, utilize the <code>SIMD</code> capabilities of the processor; thus they are very efficient.</p>
+            <p>After carefully reviewing the problem and test cases, I concluded that the question is asking for a much simpler version of 2D pattern matching. I assumed that the output of the algorithm should be nothing when the input matrix contains extra characters, even one single one.</p>
+            <h3><a id="My_Approach_10"></a>My Approach</h3>
+            <p>I decided to use my numpy magical skill to solve this problem. First I eliminate all the empty rows and columns and then I try to match the remaining entities in the matrix with each pattern.</p>
+            
+<!-- HTML generated using hilite.me --><div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #75715e"># Step 1</span>
+<span style="color: #f8f8f2">matrix</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">matrix[</span><span style="color: #f92672">~</span><span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">all(matrix</span><span style="color: #f92672">==</span><span style="color: #e6db74">&#39;.&#39;</span><span style="color: #f8f8f2">,</span> <span style="color: #f8f8f2">axis</span><span style="color: #f92672">=</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">)]</span> <span style="color: #75715e"># Removing empty rows</span>
+<span style="color: #f8f8f2">matrix</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">matrix[:,</span> <span style="color: #f92672">~</span><span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">all(matrix</span><span style="color: #f92672">==</span><span style="color: #e6db74">&#39;.&#39;</span><span style="color: #f8f8f2">,</span> <span style="color: #f8f8f2">axis</span><span style="color: #f92672">=</span><span style="color: #ae81ff">0</span><span style="color: #f8f8f2">)]</span> <span style="color: #75715e"># Removing empty columns</span>
+</pre></div>
+    
+<br>
+
+<!-- HTML generated using hilite.me --><div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #75715e">#Step 2</span>
+<span style="color: #f8f8f2">sliceM</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">sliceM</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">reshape(</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">)</span>
+<span style="color: #f8f8f2">pattern</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">pattern</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">reshape(</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">)</span>
+<span style="color: #66d9ef">return</span> <span style="color: #f8f8f2">all([x</span><span style="color: #f92672">==</span><span style="color: #f8f8f2">y</span> <span style="color: #66d9ef">for</span> <span style="color: #f8f8f2">x,</span> <span style="color: #f8f8f2">y</span> <span style="color: #f92672">in</span> <span style="color: #f8f8f2">zip(sliceM,</span> <span style="color: #f8f8f2">pattern)])</span>
+</pre></div>
+    
+<br>
+
+<p>Since the problem description doesn’t talk about the number of patterns, size of them and the maximum size of the input matrix, it is hard to optimize this code.</p>
+
+<hr>
+
+            <h3><a id="Running_27"></a>Running</h3>
+            <p>The <code>run.py</code> is the starting point of this program. Just run <code>python run.py</code> and navigate your browser to <code>http://localhost:10100/</code>.</p>
+            <h3><a id="Pattern_Matching_30"></a>Pattern Matching</h3>
+            <p>For performing pattern matching, you should send a <code>POST</code> request with appropriate <code>JSON</code> file as input to <code>localhost:10100/simple</code> endpoint. See below for input format.</p>
+            <h3><a id="Input_format_33"></a>Input format</h3>
+            <p>This program expects a <code>JSON</code> object as input. This object contains one key, <code>data</code> which stores a list of list, containing all elements in the input Matrix row by row. See the following for sample input.</p>
+
+
+
+
+<!-- HTML generated using hilite.me --><div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #f8f8f2">{</span> <span style="color: #e6db74">&quot;data&quot;</span> <span style="color: #f92672">:</span> 
+    <span style="color: #f8f8f2">[[</span><span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">],</span>
+    <span style="color: #f8f8f2">[</span><span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">],</span>
+    <span style="color: #f8f8f2">[</span><span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;.&quot;</span><span style="color: #f8f8f2">]]</span>
+<span style="color: #f8f8f2">}</span>
+</pre></div>
+
+
+<hr>
+
+<h2>Demo</h2>
+
+<p>Press <code>Match</code> button to run each test.</p>
+
+<!-- Case 1 -->
+<div >
+<div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #f92672">.......</span>
+<span style="color: #f92672">.......</span>
+<span style="color: #f92672">..</span><span style="color: #f8f8f2">S</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">W</span><span style="color: #f92672">..</span>
+<span style="color: #f92672">..</span><span style="color: #f8f8f2">SW</span><span style="color: #f92672">...</span>
+<span style="color: #f92672">..</span><span style="color: #f8f8f2">SSS</span><span style="color: #f92672">..</span>
+</pre>
+</div>
+<br>
+<button type="button" class="btn btn-dark" onclick="match(0);">Match</button>
+<span id="result0"> </span>
+<hr>
+
+<!-- Case 2 -->
+<div >
+<div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #f92672">......</span>
+<span style="color: #f92672">..</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">.</span>
+<span style="color: #f92672">...</span><span style="color: #f8f8f2">X</span><span style="color: #f92672">..</span>
+<span style="color: #f92672">..</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">.</span>
+<span style="color: #f92672">......</span>
+<span style="color: #f92672">......</span>
+</pre>
+</div>
+<br>
+<button type="button" class="btn btn-dark" onclick="match(1);">Match</button>
+<span id="result1"> </span>
+<hr>
+
+<!-- Case 3 -->
+<div >
+<div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #f92672">....</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">.....</span>
+<span style="color: #f92672">....</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">.....</span>
+<span style="color: #f92672">....</span><span style="color: #f8f8f2">XXX</span><span style="color: #f92672">...</span>
+<span style="color: #f92672">..........</span>
+<span style="color: #f92672">..........</span>
+<span style="color: #f92672">..........</span>
+<span style="color: #f92672">..........</span>
+</pre></div>
+<br>
+<button type="button" class="btn btn-dark" onclick="match(2);">Match</button>
+<span id="result2"> </span>
+<hr>
+
+<!-- Case 4 -->
+<div >
+<!-- HTML generated using hilite.me --><div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #f92672">........</span>
+<span style="color: #f92672">........</span>
+<span style="color: #f92672">...</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">....</span>
+<span style="color: #f92672">...</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">....</span>
+<span style="color: #f92672">...</span><span style="color: #f8f8f2">F</span><span style="color: #f92672">....</span>
+<span style="color: #f92672">...</span><span style="color: #f8f8f2">XXX</span><span style="color: #f92672">..</span>
+</pre></div>
+<br>
+<button type="button" class="btn btn-dark" onclick="match(3);">Match</button>
+<span id="result3"> </span>
+<hr>
+
+<h3>Custom Input</h3>
+
+<div>
+<textarea class="form-control" id="custom-input" rows="4" cols="50">
+....
+.F..
+.F..
+.XXX
+</textarea>
+<br>
+<button type="button" class="btn btn-dark" onclick="custom_match();">Match</button>
+<span id="resultcustom"> </span>
+</div>
+<hr>
+</div>
+</div>
+</div>
+</main>
+</body>
+
+<script>
+    inputs = {};
+    inputs[0] = [[".",".",".",".",".",".","."],[".",".",".",".",".",".","."],[".",".","S",".","W",".","."],[".",".","S","W",".",".","."],[".",".","S","S","S",".","."]]
+    inputs[1] = [[".",".",".",".",".","."],[".",".","F",".","F","."],[".",".",".","X",".","."],[".",".","F",".","F","."],[".",".",".",".",".","."],[".",".",".",".",".","."]]
+    inputs[2] = [[".",".",".",".","F",".",".",".",".","."],[".",".",".",".","F",".",".",".",".","."],[".",".",".",".","X","X","X",".",".","."],[".",".",".",".",".",".",".",".",".","."],[".",".",".",".",".",".",".",".",".","."],[".",".",".",".",".",".",".",".",".","."],[".",".",".",".",".",".",".",".",".","."]]
+    inputs[3] = [[".",".",".",".",".",".",".","."],[".",".",".",".",".",".",".","."],[".",".",".","F",".",".",".","."],[".",".",".","F",".",".",".","."],[".",".",".","F",".",".",".","."],[".",".",".","X","X","X",".","."]]
+    
+    function match(inputId) {
+        var xhr = new XMLHttpRequest()
+        xhr.open("POST", "/match")
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8")
+        xhr.send(JSON.stringify({"data": inputs[inputId]}))
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                console.log(xhr.response)
+                $("#result" + inputId.toString()).text(xhr.response)
+            }
+        }
+    }
+
+    function custom_match() {
+
+        var text = $('#custom-input').val()
+        text = text.replace(/^\s+|\s+$/g, "")
+        inputarr = text.split('\n')
+        inputarr = inputarr.map(x => x.split(''))
+
+        var xhr = new XMLHttpRequest()
+        xhr.open("POST", "/match")
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8")
+        xhr.send(JSON.stringify({"data": inputarr}))
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                console.log(xhr.response)
+                $("#resultcustom").text(xhr.response)
+            }
+        }
+    }
+
+</script>
+</html>
